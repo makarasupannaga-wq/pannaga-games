@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hand Cricket: Odd or Even Edition</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; }
+        .container { width: 100%; max-width: 480px; background: #1e293b; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); overflow: hidden; border: 1px solid #334155; }
+        .header { background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 15px; text-align: center; }
+        .header h1 { font-size: 22px; margin-bottom: 5px; color: #fff; }
+        .header p { font-size: 13px; color: #93c5fd; }
+        .content { padding: 20px; text-align: center; }
+        .btn { background: #2563eb; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; font-weight: bold; margin: 10px 0; width: 100%; transition: 0.2s; }
+        .btn:active { transform: scale(0.98); }
+        .btn-secondary { background: #475569; }
+        .btn-green { background: #16a34a; }
+        .mode-select { display: flex; gap: 10px; margin: 15px 0; }
+        .mode-btn { flex: 1; padding: 15px; background: #334155; border: 2px solid transparent; border-radius: 10px; color: white; cursor: pointer; font-weight: bold; }
+        .mode-btn.active { border-color: #3b82f6; background: #1e293b; }
+        .scoreboard { background: #0f172a; padding: 15px; border-radius: 10px; margin: 15px 0; display: flex; justify-content: space-around; font-size: 14px; border: 1px solid #334155; }
+        .scoreboard div span { display: block; font-size: 18px; font-weight: bold; color: #38bdf8; margin-top: 3px; }
+        .hand-display { display: flex; justify-content: center; gap: 20px; margin: 20px 0; align-items: center; }
+        .hand-box { background: #334155; padding: 15px; border-radius: 12px; width: 110px; height: 110px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 32px; border: 2px solid #475569; }
+        .hand-box small { font-size: 11px; color: #94a3b8; margin-top: 5px; }
+        .choices-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
+        .choice-btn { background: #334155; color: white; border: 2px solid #475569; padding: 14px 0; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .choice-btn:hover { background: #475569; border-color: #38bdf8; }
+        .status-msg { font-size: 15px; margin: 12px 0; min-height: 24px; color: #e2e8f0; font-weight: 500; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="app">
+    <div class="header">
+        <h1>🏏 Hand Cricket</h1>
+        <p>Odd or Even Edition</p>
+    </div>
+
+    <!-- Screen 1: Mode Select -->
+    <div class="content" id="screen-mode">
+        <h3>Choose Game Mode</h3>
+        <div class="mode-select">
+            <button class="mode-btn active" id="btn-mode-1" onclick="setMode(1)">1 Player (vs AI)</button>
+            <button class="mode-btn" id="btn-mode-2" onclick="setMode(2)">2 Players (Pass & Play)</button>
+        </div>
+        <button class="btn btn-green" onclick="startTossPhase()">Start Game</button>
+    </div>
+
+    <!-- Screen 2: Toss Phase -->
+    <div class="content hidden" id="screen-toss">
+        <h3>Toss Time (<span id="toss-player-label">Player 1</span>)</h3>
+        <p style="margin: 10px 0; color: #94a3b8; font-size: 14px;">Choose Odd or Even</p>
+        <div class="mode-select">
+            <button class="mode-btn active" id="toss-odd" onclick="selectTossChoice('odd')">ODD (ಬೆಸ)</button>
+            <button class="mode-btn" id="toss-even" onclick="selectTossChoice('even')">EVEN (ಸಮ)</button>
+        </div>
+        <p style="margin: 15px 0 5px 0; font-size: 14px;">Select your finger number for toss:</p>
+        <div class="choices-grid">
+            <button class="choice-btn" onclick="performToss(1)">1</button>
+            <button class="choice-btn" onclick="performToss(2)">2</button>
+            <button class="choice-btn" onclick="performToss(3)">3</button>
+            <button class="choice-btn" onclick="performToss(4)">4</button>
+            <button class="choice-btn" onclick="performToss(5)">5</button>
+            <button class="choice-btn" onclick="performToss(6)">6</button>
+            <button class="choice-btn" onclick="performToss(10)" style="grid-column: span 2;">10</button>
+        </div>
+    </div>
+
+    <!-- Screen 3: Decision Phase -->
+    <div class="content hidden" id="screen-decision">
+        <h3 id="decision-title">You Won the Toss!</h3>
+        <p style="margin: 15px 0; color: #94a3b8;">What do you want to do?</p>
+        <button class="btn" onclick="startInnings('bat')">Batting 🏏</button>
+        <button class="btn btn-secondary" onclick="startInnings('bowl')">Bowling 🥎</button>
+    </div>
+
+    <!-- Screen 4: Match Play -->
+    <div class="content hidden" id="screen-match">
+        <div class="scoreboard">
+            <div><span id="lbl-role">BATTING</span>Role</div>
+            <div><span id="lbl-score">0 / 0</span>Score</div>
+            <div id="target-box" class="hidden"><span id="lbl-target">0</span>Target</div>
+        </div>
+
+        <div class="status-msg" id="match-status">Select your finger action below!</div>
+
+        <div class="hand-display">
+            <div class="hand-box">
+                <span id="p1-hand-val">-</span>
+                <small id="p1-label">You</small>
+            </div>
+            <span style="font-size: 20px; font-weight: bold; color: #64748b;">VS</span>
+            <div class="hand-box">
+                <span id="p2-hand-val">-</span>
+                <small id="p2-label">AI / P2</small>
+            </div>
+        </div>
+
+        <!-- Player Choice Pad -->
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;" id="choice-prompt">Choose your hand number:</p>
+        <div class="choices-grid">
+            <button class="choice-btn" onclick="playTurn(1)">1</button>
+            <button class="choice-btn" onclick="playTurn(2)">2</button>
+            <button class="choice-btn" onclick="playTurn(3)">3</button>
+            <button class="choice-btn" onclick="playTurn(4)">4</button>
+            <button class="choice-btn" onclick="playTurn(5)">5</button>
+            <button class="choice-btn" onclick="playTurn(6)">6</button>
+            <button class="choice-btn" onclick="playTurn(10)" style="grid-column: span 2;">10</button>
+        </div>
+    </div>
+
+    <!-- Screen 5: Match Over -->
+    <div class="content hidden" id="screen-gameover">
+        <h2 id="gameover-title" style="margin-bottom: 10px; color: #38bdf8;">Match Over!</h2>
+        <p id="gameover-desc" style="margin: 15px 0; font-size: 16px; color: #cbd5e1;"></p>
+        <button class="btn btn-green" onclick="resetGame()">Play Again</button>
+    </div>
+</div>
+
+<script>
+    let gameMode = 1; // 1 = vs AI, 2 = 2 Players
+    let tossChoice = 'odd';
+    let tossUserNum = 0;
+    let tossAiNum = 0;
+    let tossWinner = 1; // 1 or 2
+    
+    let innings = 1; // 1st innings, 2nd innings
+    let playerRole = 'bat'; // 'bat' or 'bowl'
+    let score = 0;
+    let target = 0;
+    let isOut = false;
+    
+    let p1Move = null;
+    let p2Move = null;
+    let p2InputTurn = false; // For 2 player mode turn switching
+
+    function setMode(mode) {
+        gameMode = mode;
+        document.getElementById('btn-mode-1').classList.toggle('active', mode === 1);
+        document.getElementById('btn-mode-2').classList.toggle('active', mode === 2);
+    }
+
+    function startTossPhase() {
+        document.getElementById('screen-mode').classList.add('hidden');
+        document.getElementById('screen-toss').classList.remove('hidden');
+    }
+
+    function selectTossChoice(choice) {
+        tossChoice = choice;
+        document.getElementById('toss-odd').classList.toggle('active', choice === 'odd');
+        document.getElementById('toss-even').classList.toggle('active', choice === 'even');
+    }
+
+    function performToss(num) {
+        tossUserNum = num;
+        tossAiNum = Math.random() < 0.15 ? 10 : Math.floor(Math.random() * 6) + 1;
+        if(tossAiNum === 5) tossAiNum = 5;
+        
+        let sum = tossUserNum + tossAiNum;
+        let isSumEven = (sum % 2 === 0);
+        let userGuessedEven = (tossChoice === 'even');
+
+        if(isSumEven === userGuessedEven) {
+            tossWinner = 1;
+            document.getElementById('screen-toss').classList.add('hidden');
+            document.getElementById('screen-decision').classList.remove('hidden');
+            document.getElementById('decision-title').innerText = `Toss Sum: ${sum} (${isSumEven ? 'Even' : 'Odd'}). You Won the Toss!`;
+        } else {
+            tossWinner = 2;
+            // AI or P2 decides randomly or automatically
+            playerRole = Math.random() < 0.5 ? 'bat' : 'bowl';
+            document.getElementById('screen-toss').classList.add('hidden');
+            document.getElementById('screen-match').classList.remove('hidden');
+            let sumText = `Toss Sum: ${sum} (${isSumEven ? 'Even' : 'Odd'}). Opponent won toss and chose to ${playerRole === 'bat' ? 'bat' : 'bowl'} first!`;
+            document.getElementById('match-status').innerText = sumText;
+            initInningsUI();
+        }
+    }
+
+    function startInnings(role) {
+        playerRole = role;
+        document.getElementById('screen-decision').classList.add('hidden');
+        document.getElementById('screen-match').classList.remove('hidden');
+        initInningsUI();
+    }
+
+    function initInningsUI() {
+        score = 0;
+        isOut = false;
+        p1Move = null;
+        p2Move = null;
+        p2InputTurn = false;
+        
+        document.getElementById('p1-hand-val').innerText = '-';
+        document.getElementById('p2-hand-val').innerText = '-';
+        document.getElementById('p1-label').innerText = gameMode === 2 && innings === 2 ? 'Player 2' : 'You';
+        document.getElementById('p2-label').innerText = gameMode === 2 ? (innings === 1 ? 'Player 2' : 'Player 1') : 'AI Bowler';
+        
+        let roleText = playerRole === 'bat' ? 'BATTING 🏏' : 'BOWLING 🥎';
+        if(innings === 2) {
+            roleText = playerRole === 'bat' ? 'CHASING 🏏' : 'DEFENDING 🥎';
+            document.getElementById('target-box').classList.remove('hidden');
+            document.getElementById('lbl-target').innerText = target;
+        } else {
+            document.getElementById('target-box').classList.add('hidden');
+        }
+        document.getElementById('lbl-role').innerText = roleText;
+        document.getElementById('lbl-score').innerText = `${score} / ${isOut ? 1 : 0}`;
+    }
+
+    function playTurn(num) {
+        if(gameMode === 1) {
+            // Vs AI
+            let aiNum = Math.random() < 0.1 ? 10 : Math.floor(Math.random() * 6) + 1;
+            processMoves(num, aiNum);
+        } else {
+            // 2 Players mode
+            if(!p2InputTurn) {
+                p1Move = num;
+                p2InputTurn = true;
+                document.getElementById('match-status').innerText = "Player 1 locked! Now Player 2's turn (Pass phone).";
+                document.getElementById('p1-hand-val').innerText = '🔒';
+                document.getElementById('p2-hand-val').innerText = '-';
+            } else {
+                p2Move = num;
+                p2InputTurn = false;
+                processMoves(p1Move, p2Move);
+            }
+        }
+    }
+
+    function processMoves(m1, m2) {
+        document.getElementById('p1-hand-val').innerText = m1;
+        document.getElementById('p2-hand-val').innerText = m2;
+
+        let batterMove = (playerRole === 'bat') ? m1 : m2;
+        let bowlerMove = (playerRole === 'bat') ? m2 : m1;
+
+        if(batterMove === bowlerMove) {
+            // OUT!
+            isOut = true;
+            document.getElementById('match-status').innerText = `OUT! Both played ${batterMove}!`;
+            document.getElementById('lbl-score').innerText = `${score} / 1`;
+            
+            setTimeout(handleInningsEnd, 1800);
+        } else {
+            // Runs scored by batter
+            let run = batterMove;
+            score += run;
+            document.getElementById('match-status').innerText = `Scored ${run} run(s)!`;
+            document.getElementById('lbl-score').innerText = `${score} / 0`;
+
+            if(innings === 2 && score >= target) {
+                setTimeout(() => finishMatch(true), 1500);
+            }
+        }
+    }
+
+    function handleInningsEnd() {
+        if(innings === 1) {
+            target = score + 1;
+            innings = 2;
+            playerRole = playerRole === 'bat' ? 'bowl' : 'bat';
+            alert(`Innings Over! Target is ${target}. Get ready for 2nd innings!`);
+            initInningsUI();
+            document.getElementById('match-status').innerText = "2nd Innings Started!";
+        } else {
+            // Match Finished in 2nd Innings
+            let userBattingFirst = (target - 1 > score); // Simple check
+            // Let's accurately verify who won based on roles
+            finishMatch(false);
+        }
+    }
+
+    function finishMatch(targetReached) {
+        document.getElementById('screen-match').classList.add('hidden');
+        document.getElementById('screen-gameover').classList.remove('hidden');
+        
+        let desc = "";
+        if(innings === 2 && targetReached) {
+            desc = `Target of ${target} chased successfully! You Won! 🎉`;
+        } else if(innings === 2) {
+            let defendingScore = target - 1;
+            if(score < defendingScore) {
+                desc = `Defended successfully! Opponent restricted to ${score}. You Won! 🏆`;
+            } else {
+                desc = `Opponent reached the target! You Lost. 😢`;
+            }
+        } else {
+            desc = `Game Finished. Final Score: ${score}`;
+        }
+        document.getElementById('gameover-desc').innerText = desc;
+    }
+
+    function resetGame() {
+        innings = 1;
+        score = 0;
+        target = 0;
+        isOut = false;
+        document.getElementById('screen-gameover').classList.add('hidden');
+        document.getElementById('screen-mode').classList.remove('hidden');
+    }
+</script>
+
+</body>
+</html>
