@@ -1,17 +1,28 @@
-<!DOCTYPEhtml>
+<!DOCTYPE html>
 <html>
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background: #f0f2f5; }
-  .grid { display: flex; gap: 20px; margin-top: 20px; }
-  .card { background: white; padding: 20px; border-radius: 10px; text-decoration: none; color: #333; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 150px; text-align: center; font-weight: bold; }
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; background: #0f172a; color: white; margin: 0; }
+  h1 { margin-bottom: 30px; font-weight: 700; }
+  .grid { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
+  .card { background: #1e293b; border-radius: 15px; text-decoration: none; color: white; box-shadow: 0 10px 15px rgba(0,0,0,0.3); width: 200px; text-align: center; font-weight: bold; font-size: 1.2rem; transition: transform 0.2s, background 0.2s; border: 2px solid #334155; overflow: hidden; display: flex; flex-direction: column; }
+  .card:hover { transform: translateY(-5px); background: #334155; border-color: #3b82f6; }
+  .thumb { width: 100%; height: 120px; background: #475569; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; color: #94a3b8; border-bottom: 2px solid #334155; }
+  .title { padding: 15px; }
 </style>
 </head>
 <body>
-<h1>ನನ್ನ ಗೇಮ್ಸ್</h1>
+<h1>My Games</h1>
 <div class="grid">
-  <a href="cricket.html" class="card">Hand Cricket</a>
-  <a href="pen-race.html" class="card">Pen Race</a>
+  <a href="cricket.html" class="card">
+    <div class="thumb">Hand Cricket Thumbnail</div>
+    <div class="title">Hand Cricket</div>
+  </a>
+  <a href="pen-race.html" class="card">
+    <div class="thumb">Pen Race Thumbnail</div>
+    <div class="title">Pen Race</div>
+  </a>
 </div>
 </body>
 </html>
