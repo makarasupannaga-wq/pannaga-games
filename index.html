@@ -8,7 +8,8 @@
   .grid { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; }
   .card { background: #1e293b; border-radius: 15px; text-decoration: none; color: white; box-shadow: 0 10px 15px rgba(0,0,0,0.3); width: 220px; text-align: center; font-weight: bold; font-size: 1.2rem; transition: transform 0.2s, background 0.2s; border: 2px solid #334155; overflow: hidden; display: flex; flex-direction: column; }
   .card:hover { transform: translateY(-5px); background: #334155; border-color: #3b82f6; }
-  .thumb { width: 100%; height: 200px; background: #334155; display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 1rem; color: #94a3b8; }
+  .thumb { width: 100%; height: 200px; background: #334155; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
   .title { padding: 15px; }
 </style>
 </head>
@@ -16,15 +17,15 @@
 <h1>Nanna Games</h1>
 <div class="grid">
   <a href="cricket.html" class="card">
-    <div class="thumb">Hand Cricket</div>
+    <div class="thumb"><img src="1794912472245.png" alt="Hand Cricket"></div>
     <div class="title">Hand Cricket</div>
   </a>
   <a href="pen-race.html" class="card">
-    <div class="thumb">Pen Race</div>
+    <div class="thumb"><img src="1794912711157.png" alt="Pen Race"></div>
     <div class="title">Pen Race</div>
   </a>
   <a href="kabaddi.html" class="card">
-    <div class="thumb">Kabaddi 3D</div>
+    <div class="thumb"><img src="1000267035.jpg" alt="Kabaddi 3D"></div>
     <div class="title">Kabaddi (Fight Karo)</div>
   </a>
 </div>
