@@ -22,12 +22,15 @@
         .scoreboard { background: #0f172a; padding: 15px; border-radius: 10px; margin: 15px 0; display: flex; justify-content: space-around; font-size: 14px; border: 1px solid #334155; }
         .scoreboard div span { display: block; font-size: 18px; font-weight: bold; color: #38bdf8; margin-top: 3px; }
         .hand-display { display: flex; justify-content: center; gap: 20px; margin: 20px 0; align-items: center; }
-        .hand-box { background: #334155; padding: 15px; border-radius: 12px; width: 110px; height: 110px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 32px; border: 2px solid #475569; }
+        .hand-box { background: #334155; padding: 15px; border-radius: 12px; width: 110px; height: 110px; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 38px; border: 2px solid #475569; }
         .hand-box small { font-size: 11px; color: #94a3b8; margin-top: 5px; }
         .choices-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 15px 0; }
-        .choice-btn { background: #334155; color: white; border: 2px solid #475569; padding: 14px 0; font-size: 18px; font-weight: bold; border-radius: 8px; cursor: pointer; }
+        .choice-btn { background: #334155; color: white; border: 2px solid #475569; padding: 14px 0; font-size: 22px; border-radius: 8px; cursor: pointer; }
         .choice-btn:hover { background: #475569; border-color: #38bdf8; }
         .status-msg { font-size: 15px; margin: 12px 0; min-height: 24px; color: #e2e8f0; font-weight: 500; }
+        .gesture-guide { display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px; margin-top: 15px; background: #0f172a; padding: 10px; border-radius: 8px; font-size: 20px; }
+        .gesture-item { display: flex; flex-direction: column; align-items: center; font-size: 11px; color: #94a3b8; }
+        .gesture-item span { font-size: 24px; margin-bottom: 2px; }
         .hidden { display: none !important; }
     </style>
 </head>
@@ -38,7 +41,7 @@
         <h1>🏏 Hand Cricket</h1>
         <p>Odd or Even Edition</p>
     </div>
-
+<br><a href="pen-race.html">Play Pen Race</a>
     <!-- Screen 1: Mode Select -->
     <div class="content" id="screen-mode">
         <h3>Choose Game Mode</h3>
@@ -59,13 +62,13 @@
         </div>
         <p style="margin: 15px 0 5px 0; font-size: 14px;">Select your finger number for toss:</p>
         <div class="choices-grid">
-            <button class="choice-btn" onclick="performToss(1)">1</button>
-            <button class="choice-btn" onclick="performToss(2)">2</button>
-            <button class="choice-btn" onclick="performToss(3)">3</button>
-            <button class="choice-btn" onclick="performToss(4)">4</button>
-            <button class="choice-btn" onclick="performToss(5)">5</button>
-            <button class="choice-btn" onclick="performToss(6)">6</button>
-            <button class="choice-btn" onclick="performToss(10)" style="grid-column: span 2;">10</button>
+            <button class="choice-btn" onclick="performToss(1)">☝️ 1</button>
+            <button class="choice-btn" onclick="performToss(2)">✌️ 2</button>
+            <button class="choice-btn" onclick="performToss(3)">🤟 3</button>
+            <button class="choice-btn" onclick="performToss(4)">🖖 4</button>
+            <button class="choice-btn" onclick="performToss(5)">🖐️ 5</button>
+            <button class="choice-btn" onclick="performToss(6)">👍 6</button>
+            <button class="choice-btn" onclick="performToss(10)" style="grid-column: span 2;">✊ 10</button>
         </div>
     </div>
 
@@ -102,13 +105,28 @@
         <!-- Player Choice Pad -->
         <p style="font-size: 13px; color: #94a3b8; margin-bottom: 8px;" id="choice-prompt">Choose your hand number:</p>
         <div class="choices-grid">
-            <button class="choice-btn" onclick="playTurn(1)">1</button>
-            <button class="choice-btn" onclick="playTurn(2)">2</button>
-            <button class="choice-btn" onclick="playTurn(3)">3</button>
-            <button class="choice-btn" onclick="playTurn(4)">4</button>
-            <button class="choice-btn" onclick="playTurn(5)">5</button>
-            <button class="choice-btn" onclick="playTurn(6)">6</button>
-            <button class="choice-btn" onclick="playTurn(10)" style="grid-column: span 2;">10</button>
+            <button class="choice-btn" onclick="playTurn(1)">☝️</button>
+            <button class="choice-btn" onclick="playTurn(2)">✌️</button>
+            <button class="choice-btn" onclick="playTurn(3)">🤟</button>
+            <button class="choice-btn" onclick="playTurn(4)">🖖</button>
+            <button class="choice-btn" onclick="playTurn(5)">🖐️</button>
+            <button class="choice-btn" onclick="playTurn(6)">👍</button>
+            <button class="choice-btn" onclick="playTurn(10)" style="grid-column: span 2;">✊</button>
+        </div>
+
+        <div style="margin-top: 20px; text-align: left;">
+            <p style="font-size: 12px; color: #94a3b8; text-align: center;">HAND GESTURES GUIDE (ನಿಮ್ಮ ಕೈ ಚಿಹ್ನೆಗಳು)</p>
+            <div class="gesture-guide">
+                <div class="gesture-item"><span>☝️</span>1</div>
+                <div class="gesture-item"><span>✌️</span>2</div>
+                <div class="gesture-item"><span>🤟</span>3</div>
+                <div class="gesture-item"><span>🖖</span>4</div>
+                <div class="gesture-item"><span>🖐️</span>5</div>
+                <div class="gesture-item"><span>👍</span>6</div>
+            </div>
+            <div style="display: flex; justify-content: center; margin-top: 5px;">
+                <div class="gesture-item" style="flex-direction: row; gap: 5px; background: #0f172a; padding: 5px 15px; border-radius: 8px; font-size: 14px;"><span>✊</span> 10 (Fist)</div>
+            </div>
         </div>
     </div>
 
@@ -121,21 +139,25 @@
 </div>
 
 <script>
-    let gameMode = 1; // 1 = vs AI, 2 = 2 Players
+    let gameMode = 1;
     let tossChoice = 'odd';
     let tossUserNum = 0;
     let tossAiNum = 0;
-    let tossWinner = 1; // 1 or 2
+    let tossWinner = 1;
     
-    let innings = 1; // 1st innings, 2nd innings
-    let playerRole = 'bat'; // 'bat' or 'bowl'
+    let innings = 1;
+    let playerRole = 'bat';
     let score = 0;
     let target = 0;
     let isOut = false;
     
     let p1Move = null;
     let p2Move = null;
-    let p2InputTurn = false; // For 2 player mode turn switching
+    let p2InputTurn = false;
+
+    const gestureMap = {
+        1: '☝️', 2: '✌️', 3: '🤟', 4: '🖖', 5: '🖐️', 6: '👍', 10: '✊'
+    };
 
     function setMode(mode) {
         gameMode = mode;
@@ -157,20 +179,18 @@
     function performToss(num) {
         tossUserNum = num;
         tossAiNum = Math.random() < 0.15 ? 10 : Math.floor(Math.random() * 6) + 1;
-        if(tossAiNum === 5) tossAiNum = 5;
         
         let sum = tossUserNum + tossAiNum;
         let isSumEven = (sum % 2 === 0);
         let userGuessedEven = (tossChoice === 'even');
 
-        if(isSumEven === userGuessedEven) {
+        if (isSumEven === userGuessedEven) {
             tossWinner = 1;
             document.getElementById('screen-toss').classList.add('hidden');
             document.getElementById('screen-decision').classList.remove('hidden');
             document.getElementById('decision-title').innerText = `Toss Sum: ${sum} (${isSumEven ? 'Even' : 'Odd'}). You Won the Toss!`;
         } else {
             tossWinner = 2;
-            // AI or P2 decides randomly or automatically
             playerRole = Math.random() < 0.5 ? 'bat' : 'bowl';
             document.getElementById('screen-toss').classList.add('hidden');
             document.getElementById('screen-match').classList.remove('hidden');
@@ -200,7 +220,7 @@
         document.getElementById('p2-label').innerText = gameMode === 2 ? (innings === 1 ? 'Player 2' : 'Player 1') : 'AI Bowler';
         
         let roleText = playerRole === 'bat' ? 'BATTING 🏏' : 'BOWLING 🥎';
-        if(innings === 2) {
+        if (innings === 2) {
             roleText = playerRole === 'bat' ? 'CHASING 🏏' : 'DEFENDING 🥎';
             document.getElementById('target-box').classList.remove('hidden');
             document.getElementById('lbl-target').innerText = target;
@@ -212,13 +232,11 @@
     }
 
     function playTurn(num) {
-        if(gameMode === 1) {
-            // Vs AI
+        if (gameMode === 1) {
             let aiNum = Math.random() < 0.1 ? 10 : Math.floor(Math.random() * 6) + 1;
             processMoves(num, aiNum);
         } else {
-            // 2 Players mode
-            if(!p2InputTurn) {
+            if (!p2InputTurn) {
                 p1Move = num;
                 p2InputTurn = true;
                 document.getElementById('match-status').innerText = "Player 1 locked! Now Player 2's turn (Pass phone).";
@@ -233,34 +251,31 @@
     }
 
     function processMoves(m1, m2) {
-        document.getElementById('p1-hand-val').innerText = m1;
-        document.getElementById('p2-hand-val').innerText = m2;
+        document.getElementById('p1-hand-val').innerText = gestureMap[m1];
+        document.getElementById('p2-hand-val').innerText = gestureMap[m2];
 
         let batterMove = (playerRole === 'bat') ? m1 : m2;
         let bowlerMove = (playerRole === 'bat') ? m2 : m1;
 
-        if(batterMove === bowlerMove) {
-            // OUT!
+        if (batterMove === bowlerMove) {
             isOut = true;
             document.getElementById('match-status').innerText = `OUT! Both played ${batterMove}!`;
             document.getElementById('lbl-score').innerText = `${score} / 1`;
-            
             setTimeout(handleInningsEnd, 1800);
         } else {
-            // Runs scored by batter
             let run = batterMove;
             score += run;
             document.getElementById('match-status').innerText = `Scored ${run} run(s)!`;
             document.getElementById('lbl-score').innerText = `${score} / 0`;
 
-            if(innings === 2 && score >= target) {
+            if (innings === 2 && score >= target) {
                 setTimeout(() => finishMatch(true), 1500);
             }
         }
     }
 
     function handleInningsEnd() {
-        if(innings === 1) {
+        if (innings === 1) {
             target = score + 1;
             innings = 2;
             playerRole = playerRole === 'bat' ? 'bowl' : 'bat';
@@ -268,9 +283,6 @@
             initInningsUI();
             document.getElementById('match-status').innerText = "2nd Innings Started!";
         } else {
-            // Match Finished in 2nd Innings
-            let userBattingFirst = (target - 1 > score); // Simple check
-            // Let's accurately verify who won based on roles
             finishMatch(false);
         }
     }
@@ -280,11 +292,11 @@
         document.getElementById('screen-gameover').classList.remove('hidden');
         
         let desc = "";
-        if(innings === 2 && targetReached) {
+        if (innings === 2 && targetReached) {
             desc = `Target of ${target} chased successfully! You Won! 🎉`;
-        } else if(innings === 2) {
+        } else if (innings === 2) {
             let defendingScore = target - 1;
-            if(score < defendingScore) {
+            if (score < defendingScore) {
                 desc = `Defended successfully! Opponent restricted to ${score}. You Won! 🏆`;
             } else {
                 desc = `Opponent reached the target! You Lost. 😢`;
