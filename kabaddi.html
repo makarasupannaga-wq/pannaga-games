@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Pro Kabaddi 3D - Fight Karo Edition</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    body {
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: #090d16;
+      color: #fff;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Overlays */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at center, rgba(15, 23, 42, 0.92), rgba(2, 6, 23, 0.98));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 14px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .panel {
+      background: linear-gradient(145deg, #1e293b, #0f172a);
+      border: 2px solid #f59e0b;
+      border-radius: 16px;
+      padding: 18px;
+      width: 100%;
+      max-width: 520px;
+      max-height: 92vh;
+      overflow-y: auto;
+      box-shadow: 0 0 40px rgba(245, 158, 11, 0.25);
+      text-align: center;
+    }
+
+    .panel h1 {
+      font-size: 1.6rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: linear-gradient(90deg, #fbbf24, #f97316, #ef4444);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+
+    .squad-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      text-align: left;
+      margin-bottom: 14px;
+    }
+
+    .team-box {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 8px;
+    }
+
+    .team-box.user-team {
+      border-color: #3b82f6;
+    }
+
+    .team-box.ai-team {
+      border-color: #ef4444;
+    }
+
+    .team-title {
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .player-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      padding: 3px 0;
+      color: #e2e8f0;
+    }
+
+    .role-tag {
+      font-size: 0.62rem;
+      padding: 1px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .role-R { background: #dc2626; color: #fff; }
+    .role-D { background: #2563eb; color: #fff; }
+    .role-AR { background: #d97706; color: #fff; }
+
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(90deg, #f59e0b, #ea580c);
+      color: #fff;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(234, 88, 12, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+
+    /* Broadcast Scoreboard HUD */
+    #hudTop {
+      position: fixed;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96%;
+      max-width: 680px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(2, 6, 23, 0.92));
+      border: 2px solid #475569;
+      border-radius: 12px;
+      padding: 6px 12px;
+      z-index: 10;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    }
+
+    .score-side {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .team-badge {
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-weight: 900;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+    }
+
+    .blue-bg { background: #1d4ed8; }
+    .red-bg { background: #b91c1c; }
+
+    .score-num {
+      font-size: 1.5rem;
+      font-weight: 900;
+      color: #fbbf24;
+      min-width: 30px;
+      text-align: center;
+    }
+
+    .active-dots {
+      display: flex;
+      gap: 3px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+    }
+
+    .dot.out {
+      background: #334155;
+    }
+
+    .center-clock {
+      text-align: center;
+    }
+
+    #raidTimer {
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #38bdf8;
+      line-height: 1;
+    }
+
+    #raidTimer.danger {
+      color: #ef4444;
+      animation: pulse 0.5s infinite alternate;
+    }
+
+    #raidStatus {
+      font-size: 0.66rem;
+      font-weight: 800;
+      color: #fbbf24;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    @keyframes pulse {
+      from { transform: scale(1); }
+      to { transform: scale(1.15); }
+    }
+
+    /* Rule Badges Bar */
+    #ruleIndicators {
+      position: fixed;
+      top: 64px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    .rule-pill {
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #475569;
+      color: #94a3b8;
+    }
+
+    .rule-pill.active {
+      background: #16a34a;
+      border-color: #4ade80;
+      color: #fff;
+    }
+
+    .rule-pill.dod {
+      background: #dc2626;
+      border-color: #f87171;
+      color: #fff;
+    }
+
+    /* Banner Announcements */
+    #bannerMsg {
+      position: fixed;
+      top: 26%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      background: linear-gradient(90deg, rgba(220, 38, 38, 0.95), rgba(234, 88, 12, 0.95));
+      border: 2px solid #fde047;
+      padding: 10px 24px;
+      border-radius: 12px;
+      font-size: 1.25rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.25s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    #bannerMsg.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* WWE / Fight Karo Struggle Meter */
+    #struggleBox {
+      position: fixed;
+      bottom: 135px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 88%;
+      max-width: 380px;
+      background: rgba(2, 6, 23, 0.92);
+      border: 2px solid #f59e0b;
+      border-radius: 12px;
+      padding: 10px;
+      text-align: center;
+      z-index: 30;
+    }
+
+    #struggleTitle {
+      font-size: 0.82rem;
+      font-weight: 900;
+      color: #fbbf24;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+
+    .meter-track {
+      width: 100%;
+      height: 18px;
+      background: #dc2626;
+      border-radius: 9px;
+      overflow: hidden;
+      border: 1px solid #fff;
+      position: relative;
+    }
+
+    #meterFill {
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, #2563eb, #38bdf8);
+      transition: width 0.08s linear;
+    }
+
+    #mashBtn {
+      margin-top: 8px;
+      width: 100%;
+      padding: 10px;
+      font-size: 0.95rem;
+      font-weight: 900;
+      background: #eab308;
+      color: #0f172a;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    /* Controls Bottom */
+    #controlsLayer {
+      position: fixed;
+      bottom: 14px;
+      left: 0;
+      right: 0;
+      padding: 0 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      z-index: 15;
+      pointer-events: none;
+    }
+
+    #joystickZone {
+      width: 115px;
+      height: 115px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      position: relative;
+      pointer-events: auto;
+    }
+
+    #joystickKnob {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #fbbf24, #d97706);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .action-btns {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .act-btn {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      font-size: 0.75rem;
+      font-weight: 900;
+      color: #fff;
+      text-transform: uppercase;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    .act-btn:active {
+      transform: scale(0.92);
+    }
+
+    .btn-hand { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+    .btn-kick { background: linear-gradient(135deg, #dc2626, #991b1b); }
+    .btn-jump { background: linear-gradient(135deg, #16a34a, #15803d); }
+    .btn-retreat { background: linear-gradient(135deg, #d97706, #b45309); }
+
+    #camSwitchBtn {
+      position: fixed;
+      top: 64px;
+      right: 12px;
+      z-index: 15;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #fbbf24;
+      color: #fbbf24;
+      padding: 5px 10px;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Start / Squad Screen -->
+  <div id="startModal" class="overlay">
+    <div class="panel">
+      <h1>🔥 Pro Kabaddi 3D</h1>
+      <p class="subtitle">Fight Karo Action • Full Pro Kabaddi Rules • 7v7</p>
+
+      <div class="squad-grid">
+        <div class="team-box user-team">
+          <div class="team-title" style="color:#60a5fa;">🔵 Malnad Warriors (You)</div>
+          <div id="userRosterList"></div>
+        </div>
+        <div class="team-box ai-team">
+          <div class="team-title" style="color:#f87171;">🔴 Karavali Titans (AI)</div>
+          <div id="aiRosterList"></div>
+        </div>
+      </div>
+
+      <p style="font-size:0.72rem; color:#cbd5e1; margin-bottom:10px;">
+        <b>Controls:</b> Left Joystick / WASD to Move • Action Buttons for Hand Touch, Kick/Tackle, Jump/Escape & Return Home.
+      </p>
+      <button id="startMatchBtn" class="btn-primary">Start 3D Kabaddi Match</button>
+    </div>
+  </div>
+
+  <!-- Match Over Modal -->
+  <div id="endModal" class="overlay hidden">
+    <div class="panel">
+      <h1 id="matchWinnerTitle">🏆 Malnad Warriors Win!</h1>
+      <p class="subtitle" id="matchFinalScore">Final Score: 24 - 18</p>
+      <button onclick="location.reload()" class="btn-primary">Play Rematch</button>
+    </div>
+  </div>
+
+  <!-- Top Broadcast Scoreboard -->
+  <div id="hudTop">
+    <div class="score-side">
+      <span class="team-badge blue-bg">YOU</span>
+      <span id="userScore" class="score-num">0</span>
+      <div id="userDots" class="active-dots"></div>
+    </div>
+
+    <div class="center-clock">
+      <div id="raidTimer">30</div>
+      <div id="raidStatus">RAID 1 • YOUR RAID</div>
+    </div>
+
+    <div class="score-side">
+      <div id="aiDots" class="active-dots"></div>
+      <span id="aiScore" class="score-num">0</span>
+      <span class="team-badge red-bg">AI</span>
+    </div>
+  </div>
+
+  <!-- Rule Indicators -->
+  <div id="ruleIndicators">
+    <span id="pillBaulk" class="rule-pill">BAULK LINE</span>
+    <span id="pillBonus" class="rule-pill">BONUS ON</span>
+    <span id="pillLobby" class="rule-pill">LOBBY CLOSED</span>
+    <span id="pillDod" class="rule-pill hidden">DO OR DIE!</span>
+  </div>
+
+  <button id="camSwitchBtn">🎥 CAM: ACTION</button>
+
+  <!-- Big WWE / Kabaddi Announcement -->
+  <div id="bannerMsg">SUPER TACKLE! +2</div>
+
+  <!-- WWE / Fight Karo Grappling Struggle Bar -->
+  <div id="struggleBox" class="hidden">
+    <div id="struggleTitle">⚡ TACKLE GRAPPLE! TAP RAPIDLY TO BREAK FREE! ⚡</div>
+    <div class="meter-track">
+      <div id="meterFill"></div>
+    </div>
+    <button id="mashBtn">👊 TAP / SPACE TO STRUGGLE!</button>
+  </div>
+
+  <!-- Bottom Touch & Action Controls -->
+  <div id="controlsLayer">
+    <div id="joystickZone">
+      <div id="joystickKnob"></div>
+    </div>
+
+    <div class="action-btns">
+      <button id="btnAct1" class="act-btn btn-hand">✋ Hand Touch</button>
+      <button id="btnAct2" class="act-btn btn-kick">🦵 Kick / Dash</button>
+      <button id="btnAct3" class="act-btn btn-jump">🦘 Jump / Dive</button>
+      <button id="btnAct4" class="act-btn btn-retreat">🏃 Return Safe</button>
+    </div>
+  </div>
+
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <script>
+    /*************************************************************************
+     * 1. PLAYER ROSTER & CUSTOM APPEARANCE PROFILES
+     * Matches exact user photos for the 9 provided friends + custom athletic
+     * looks for the remaining 7 players.
+     *************************************************************************/
+    const USER_SQUAD = [
+      {
+        name: "Prajwal K R", role: "R", jersey: 7, isPlaying: true,
+        look: { skin: 0xd49b72, hair: "quiff", beard: "lightStache", glasses: false, photo: "prajwal_kr.jpg" }
+      },
+      {
+        name: "Shreenaga", role: "R", jersey: 10, isPlaying: true,
+        look: { skin: 0xc68a63, hair: "curly", beard: "lightStache", glasses: false, photo: "shreenaga.jpg" }
+      },
+      {
+        name: "Abhi", role: "R", jersey: 11, isPlaying: true,
+        look: { skin: 0xb97a56, hair: "fade", beard: "goatee", glasses: false, photo: null }
+      },
+      {
+        name: "Skanda", role: "R", jersey: 9, isPlaying: true,
+        look: { skin: 0xd9a077, hair: "spiky", beard: "none", glasses: false, photo: null }
+      },
+      {
+        name: "Harsha", role: "AR", jersey: 5, isPlaying: true,
+        look: { skin: 0xc28258, hair: "sidePart", beard: "trimmed", glasses: false, photo: null }
+      },
+      {
+        name: "Pannaga", role: "D", jersey: 1, isPlaying: true,
+        look: { skin: 0xd19870, hair: "longFlow", beard: "lightStache", glasses: false, photo: "pannaga.jpg" }
+      },
+      {
+        name: "Gowtham", role: "D", jersey: 4, isPlaying: true,
+        look: { skin: 0xc98e65, hair: "wavyTop", beard: "fullBeard", glasses: false, photo: "gowtham.jpg" }
+      },
+      {
+        name: "Naushad", role: "D", jersey: 8, isPlaying: false,
+        look: { skin: 0xba7c55, hair: "buzz", beard: "boxedBeard", glasses: false, photo: null }
+      }
+    ];
+
+    const AI_SQUAD = [
+      {
+        name: "Pramoda", role: "R", jersey: 12, isPlaying: true,
+        look: { skin: 0xc98f68, hair: "mediumCrop", beard: "lightStache", glasses: false, photo: "pramoda.jpg" }
+      },
+      {
+        name: "Prajwal", role: "R", jersey: 14, isPlaying: true,
+        look: { skin: 0xb5754d, hair: "sideSwept", beard: "chinStrap", glasses: false, photo: "prajwal.jpg" }
+      },
+      {
+        name: "Rajath", role: "R", jersey: 17, isPlaying: true,
+        look: { skin: 0xb87852, hair: "curlyTall", beard: "patchyBeard", glasses: false, photo: "rajath.jpg" }
+      },
+      {
+        name: "Shreesha", role: "R", jersey: 21, isPlaying: true,
+        look: { skin: 0xd89f78, hair: "undercut", beard: "none", glasses: false, photo: null }
+      },
+      {
+        name: "Rakshith", role: "AR", jersey: 3, isPlaying: true,
+        look: { skin: 0xdba580, hair: "shortNeat", beard: "fullTrim", glasses: true, photo: "rakshith.jpg" }
+      },
+      {
+        name: "Kowshik", role: "D", jersey: 2, isPlaying: true,
+        look: { skin: 0xc4875e, hair: "thickWavy", beard: "fullBeard", glasses: false, photo: "kowshik.jpg" }
+      },
+      {
+        name: "Nagananda", role: "D", jersey: 6, isPlaying: true,
+        look: { skin: 0xae6e48, hair: "crew", beard: "mustache", glasses: false, photo: null }
+      },
+      {
+        name: "Manoj", role: "D", jersey: 15, isPlaying: false,
+        look: { skin: 0xc88c64, hair: "fade", beard: "stubble", glasses: false, photo: null }
+      }
+    ];
+
+    // Populate Roster UI on Start Modal
+    function renderStartRosters() {
+      const uList = document.getElementById("userRosterList");
+      const aList = document.getElementById("aiRosterList");
+      USER_SQUAD.forEach(p => {
+        uList.innerHTML += `<div class="player-row"><span>#${p.jersey} ${p.name} ${p.isPlaying ? '' : '(Sub)'}</span><span class="role-tag role-${p.role}">${p.role}</span></div>`;
+      });
+      AI_SQUAD.forEach(p => {
+        aList.innerHTML += `<div class="player-row"><span>#${p.jersey} ${p.name} ${p.isPlaying ? '' : '(Sub)'}</span><span class="role-tag role-${p.role}">${p.role}</span></div>`;
+      });
+    }
+    renderStartRosters();
+
+    /*************************************************************************
+     * 2. THREE.JS 3D STADIUM, MAT, & CHARACTER ENGINE
+     *************************************************************************/
+    const canvas = document.getElementById("gameCanvas");
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x090d16);
+    scene.fog = new THREE.FogExp2(0x090d16, 0.016);
+
+    const camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 150);
+    let cameraMode = "ACTION"; // ACTION, BROADCAST, CLOSEUP
+
+    // Stadium Lighting
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1e293b, 0.75);
+    scene.add(hemiLight);
+
+    const spot1 = new THREE.SpotLight(0xfff7ed, 1.3);
+    spot1.position.set(12, 24, 14);
+    spot1.castShadow = true;
+    scene.add(spot1);
+
+    const spot2 = new THREE.SpotLight(0xe0f2fe, 1.0);
+    spot2.position.set(-12, 24, -14);
+    scene.add(spot2);
+
+    // Court Dimensions (Standard Pro Kabaddi 13m x 10m mapped to 3D units)
+    // Z: -6.5 (AI End) to +6.5 (User End). Midline at Z = 0.
+    // X: -5.0 to +5.0. Main court X: -4.0 to +4.0. Lobbies: -5.0..-4.0 and +4.0..+5.0
+    const COURT_HALF_Z = 6.5;
+    const COURT_HALF_X = 5.0;
+    const LOBBY_X = 4.0;
+    const BAULK_Z = 3.75;
+    const BONUS_Z = 4.75;
+
+    function buildKabaddiArena() {
+      // Stadium Floor
+      const floorGeo = new THREE.PlaneGeometry(45, 45);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = -0.02;
+      floor.receiveShadow = true;
+      scene.add(floor);
+
+      // Main Blue/Orange Kabaddi Mat
+      const matGeo = new THREE.BoxGeometry(COURT_HALF_X * 2, 0.08, COURT_HALF_Z * 2);
+      const matMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.65 });
+      const mat = new THREE.Mesh(matGeo, matMat);
+      mat.position.y = 0.02;
+      mat.receiveShadow = true;
+      scene.add(mat);
+
+      // Lobbies (Red/Orange side strips)
+      const lobbyGeo = new THREE.BoxGeometry(1.0, 0.085, COURT_HALF_Z * 2);
+      const lobbyMat
