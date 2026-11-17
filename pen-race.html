@@ -77,7 +77,7 @@
 
     .btn-group {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
     }
 
@@ -239,11 +239,12 @@
       <h1>🖊️ Pen Race Track</h1>
       <p class="subtitle">Classic Notebook Pen Flicking Game</p>
 
-      <span class="section-label">1. Select Players (Pass & Play)</span>
+      <span class="section-label">1. Select Game Mode</span>
       <div class="btn-group" id="playerBtns">
-        <button class="opt-btn active" data-val="2">2 Players</button>
-        <button class="opt-btn" data-val="3">3 Players</button>
-        <button class="opt-btn" data-val="4">4 Players</button>
+        <button class="opt-btn active" data-val="1">🤖 1P vs AI</button>
+        <button class="opt-btn" data-val="2">👥 2 Players</button>
+        <button class="opt-btn" data-val="3">👥 3 Players</button>
+        <button class="opt-btn" data-val="4">👥 4 Players</button>
       </div>
 
       <span class="section-label">2. Choose Race Track</span>
@@ -308,7 +309,7 @@
     const penBadge = document.getElementById('penBadge');
 
     // Game Config
-    let numPlayers = 2;
+    let modePlayers = 1; // 1 means 1P vs AI, 2/3/4 means Pass & Play
     let selectedTrack = 'classic';
     const PLAYER_COLORS = [
       { name: 'Player 1 (Blue)', hex: '#1d4ed8' },
@@ -321,12 +322,13 @@
     let W = 380, H = 680;
     let leftWall = [];
     let rightWall = [];
+    let centerLine = []; // Used by AI for navigation
     let startLine = null;
     let endLine = null;
 
     let players = [];
     let currentPlayerIdx = 0;
-    let gamePhase = 'SETUP'; // SETUP, DRAW_TRACK, AIM, SLIDING, GAMEOVER
+    let gamePhase = 'SETUP'; // SETUP, DRAW_TRACK, AIM, AI_THINKING, SLIDING, GAMEOVER
 
     // Custom track drawing state
     let customCenterPoints = [];
@@ -344,7 +346,7 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('#playerBtns .opt-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        numPlayers = parseInt(btn.dataset.val);
+        modePlayers = parseInt(btn.dataset.val);
       });
     });
 
@@ -393,7 +395,6 @@
       let leftNorm = [], rightNorm = [];
 
       if (type === 'classic') {
-        // Matches the hand-drawn notebook sketch: Start bottom, curve left, sweep right to End
         leftNorm = [
           [0.14, 0.94], [0.18, 0.84], [0.22, 0.72], [0.16, 0.58],
           [0.08, 0.44], [0.12, 0.28], [0.28, 0.14], [0.55, 0.08],
@@ -441,6 +442,38 @@
         a: { x: (lLast.x + lPrev.x) * 0.5, y: (lLast.y + lPrev.y) * 0.5 },
         b: { x: (rLast.x + rPrev.x) * 0.5, y: (rLast.y + rPrev.y) * 0.5 }
       };
+
+      computeCenterWaypoints();
+    }
+
+    // Generate waypoints along the track center for AI navigation
+    function computeCenterWaypoints() {
+      centerLine = [];
+      const steps = 14;
+      for (let s = 0; s <= steps; s++) {
+        const t = s / steps;
+        const lPt = samplePolyline(leftWall, t);
+        const rPt = samplePolyline(rightWall, t);
+        centerLine.push({
+          x: (lPt.x + rPt.x) * 0.5,
+          y: (lPt.y + rPt.y) * 0.5
+        });
+      }
+    }
+
+    function samplePolyline(pts, t) {
+      if (pts.length === 0) return { x: 0, y: 0 };
+      if (t <= 0) return pts[0];
+      if (t >= 1) return pts[pts.length - 1];
+      const idxFloat = t * (pts.length - 1);
+      const idx = Math.floor(idxFloat);
+      const frac = idxFloat - idx;
+      const p1 = pts[idx];
+      const p2 = pts[idx + 1];
+      return {
+        x: p1.x + (p2.x - p1.x) * frac,
+        y: p1.y + (p2.y - p1.y) * frac
+      };
     }
 
     // Custom Track Drawing Mode
@@ -449,6 +482,7 @@
       customCenterPoints = [];
       leftWall = [];
       rightWall = [];
+      centerLine = [];
       startLine = null;
       endLine = null;
       customDrawBar.classList.remove('hidden');
@@ -473,7 +507,6 @@
     });
 
     function generateWallsFromCenterline(pts, halfWidth) {
-      // Simplify points
       const clean = [pts[0]];
       for (let i = 1; i < pts.length; i++) {
         const d = Math.hypot(pts[i].x - clean[clean.length - 1].x, pts[i].y - clean[clean.length - 1].y);
@@ -483,6 +516,7 @@
 
       leftWall = [];
       rightWall = [];
+      centerLine = clean;
 
       for (let i = 0; i < clean.length; i++) {
         const prev = clean[Math.max(0, i - 1)];
@@ -490,7 +524,6 @@
         const dx = next.x - prev.x;
         const dy = next.y - prev.y;
         const len = Math.hypot(dx, dy) || 1;
-        // Normal vector
         const nx = -dy / len;
         const ny = dx / len;
 
@@ -505,452 +538,4 @@
 
       const endIdx = leftWall.length - 1;
       endLine = {
-        a: { x: leftWall[endIdx].x, y: leftWall[endIdx].y },
-        b: { x: rightWall[endIdx].x, y: rightWall[endIdx].y }
-      };
-    }
-
-    // Initialize Players on START line
-    function initPlayers() {
-      players = [];
-      for (let i = 0; i < numPlayers; i++) {
-        const t = (i + 1) / (numPlayers + 1);
-        const sx = startLine.a.x + (startLine.b.x - startLine.a.x) * t;
-        const sy = startLine.a.y + (startLine.b.y - startLine.a.y) * t;
-        players.push({
-          id: i,
-          name: PLAYER_COLORS[i].name,
-          color: PLAYER_COLORS[i].hex,
-          points: [{ x: sx, y: sy }],
-          onBoundary: false
-        });
-      }
-      currentPlayerIdx = 0;
-      gamePhase = 'AIM';
-      updateHUD();
-      drawScene();
-    }
-
-    function updateHUD() {
-      const p = players[currentPlayerIdx];
-      turnText.textContent = `${p.name}'s Turn`;
-      turnText.style.color = p.color;
-      penBadge.style.background = p.color;
-      statusHint.textContent = p.onBoundary
-        ? 'On border! Aim back into the road & flick!'
-        : 'Touch & drag back from your dot to push pen!';
-    }
-
-    // Line Segment Intersection Helper
-    function getSegmentIntersection(p1, p2, p3, p4) {
-      const denom = (p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y);
-      if (Math.abs(denom) < 1e-6) return null;
-
-      const ua = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) / denom;
-      const ub = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / denom;
-
-      if (ua >= 0.001 && ua <= 1 && ub >= 0 && ub <= 1) {
-        return {
-          x: p1.x + ua * (p2.x - p1.x),
-          y: p1.y + ua * (p2.y - p1.y),
-          t: ua
-        };
-      }
-      return null;
-    }
-
-    // Calculate Pen Flick Trajectory & Collisions (Step 6 Rule)
-    function executeFlick(vx, vy) {
-      const p = players[currentPlayerIdx];
-      const startPt = p.points[p.points.length - 1];
-      const targetPt = { x: startPt.x + vx, y: startPt.y + vy };
-
-      let bestHit = null;
-      let hitType = 'NONE'; // 'END', 'WALL', 'CANVAS'
-
-      // 1. Check END line crossing
-      const endHit = getSegmentIntersection(startPt, targetPt, endLine.a, endLine.b);
-      if (endHit) {
-        bestHit = endHit;
-        hitType = 'END';
-      }
-
-      // 2. Check Left & Right Track Boundary Walls
-      const walls = [leftWall, rightWall];
-      for (const wall of walls) {
-        for (let i = 0; i < wall.length - 1; i++) {
-          const hit = getSegmentIntersection(startPt, targetPt, wall[i], wall[i + 1]);
-          if (hit && (!bestHit || hit.t < bestHit.t)) {
-            bestHit = hit;
-            hitType = 'WALL';
-          }
-        }
-      }
-
-      // 3. Keep inside canvas bounds if needed
-      const canvasEdges = [
-        [{ x: 4, y: 4 }, { x: W - 4, y: 4 }],
-        [{ x: W - 4, y: 4 }, { x: W - 4, y: H - 4 }],
-        [{ x: W - 4, y: H - 4 }, { x: 4, y: H - 4 }],
-        [{ x: 4, y: H - 4 }, { x: 4, y: 4 }]
-      ];
-      for (const edge of canvasEdges) {
-        const hit = getSegmentIntersection(startPt, targetPt, edge[0], edge[1]);
-        if (hit && (!bestHit || hit.t < bestHit.t)) {
-          bestHit = hit;
-          hitType = 'WALL';
-        }
-      }
-
-      const finalPt = bestHit ? { x: bestHit.x, y: bestHit.y } : targetPt;
-
-      // Start smooth pen sliding animation
-      gamePhase = 'SLIDING';
-      slideAnim = {
-        start: startPt,
-        end: finalPt,
-        progress: 0,
-        hitType: hitType
-      };
-      requestAnimationFrame(animateSlide);
-    }
-
-    function animateSlide() {
-      if (!slideAnim) return;
-      // Ease-out sliding speed like a pen slipping on paper
-      slideAnim.progress += (1 - slideAnim.progress) * 0.16 + 0.03;
-
-      if (slideAnim.progress >= 1) {
-        slideAnim.progress = 1;
-        drawScene();
-
-        const p = players[currentPlayerIdx];
-        p.points.push(slideAnim.end);
-        p.onBoundary = (slideAnim.hitType === 'WALL');
-
-        if (slideAnim.hitType === 'END') {
-          gamePhase = 'GAMEOVER';
-          document.getElementById('winnerTitle').textContent = `🏆 ${p.name} Wins!`;
-          document.getElementById('winnerTitle').style.color = p.color;
-          winModal.classList.remove('hidden');
-          slideAnim = null;
-          drawScene();
-          return;
-        }
-
-        // Next player's turn
-        slideAnim = null;
-        currentPlayerIdx = (currentPlayerIdx + 1) % players.length;
-        gamePhase = 'AIM';
-        updateHUD();
-        drawScene();
-        return;
-      }
-
-      drawScene();
-      requestAnimationFrame(animateSlide);
-    }
-
-    // Drawing Functions (Ruled Notebook Paper + Track + Ink Lines + Pen)
-    function drawNotebookPaper() {
-      ctx.fillStyle = '#fffef9';
-      ctx.fillRect(0, 0, W, H);
-
-      // Horizontal blue ruled lines
-      ctx.strokeStyle = '#cbd5e1';
-      ctx.lineWidth = 1;
-      const lineSpacing = 24;
-      for (let y = 40; y < H; y += lineSpacing) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(W, y);
-        ctx.stroke();
-      }
-
-      // Vertical double red margin line on left
-      ctx.strokeStyle = '#fca5a5';
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(34, 0);
-      ctx.lineTo(34, H);
-      ctx.moveTo(38, 0);
-      ctx.lineTo(38, H);
-      ctx.stroke();
-    }
-
-    function drawTrack() {
-      if (leftWall.length < 2 || rightWall.length < 2) return;
-
-      // Subtle shaded track surface
-      ctx.fillStyle = 'rgba(226, 232, 240, 0.35)';
-      ctx.beginPath();
-      ctx.moveTo(leftWall[0].x, leftWall[0].y);
-      for (let i = 1; i < leftWall.length; i++) ctx.lineTo(leftWall[i].x, leftWall[i].y);
-      for (let i = rightWall.length - 1; i >= 0; i--) ctx.lineTo(rightWall[i].x, rightWall[i].y);
-      ctx.closePath();
-      ctx.fill();
-
-      // Track Boundary Lines (Blue ballpoint pen style)
-      ctx.strokeStyle = '#1e3a8a';
-      ctx.lineWidth = 2.5;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-
-      ctx.beginPath();
-      ctx.moveTo(leftWall[0].x, leftWall[0].y);
-      for (let i = 1; i < leftWall.length; i++) ctx.lineTo(leftWall[i].x, leftWall[i].y);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(rightWall[0].x, rightWall[0].y);
-      for (let i = 1; i < rightWall.length; i++) ctx.lineTo(rightWall[i].x, rightWall[i].y);
-      ctx.stroke();
-
-      // START Line
-      if (startLine) {
-        ctx.strokeStyle = '#0f172a';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(startLine.a.x, startLine.a.y);
-        ctx.lineTo(startLine.b.x, startLine.b.y);
-        ctx.stroke();
-
-        ctx.fillStyle = '#0f172a';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('START', (startLine.a.x + startLine.b.x) / 2, startLine.a.y + 18);
-      }
-
-      // END Line
-      if (endLine) {
-        ctx.strokeStyle = '#dc2626';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(endLine.a.x, endLine.a.y);
-        ctx.lineTo(endLine.b.x, endLine.b.y);
-        ctx.stroke();
-
-        ctx.fillStyle = '#dc2626';
-        ctx.font = 'bold 14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('END', (endLine.a.x + endLine.b.x) / 2, endLine.a.y - 8);
-      }
-    }
-
-    function drawPlayers() {
-      players.forEach((p, idx) => {
-        // Draw ink trail segments
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = 2.6;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(p.points[0].x, p.points[0].y);
-        for (let i = 1; i < p.points.length; i++) {
-          ctx.lineTo(p.points[i].x, p.points[i].y);
-        }
-        ctx.stroke();
-
-        // Draw dots/points at every stop
-        p.points.forEach((pt, ptIdx) => {
-          const isLatest = (ptIdx === p.points.length - 1);
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, isLatest ? 5.5 : 3.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Highlight active player's current dot with a pulsing ring
-          if (isLatest && idx === currentPlayerIdx && gamePhase === 'AIM') {
-            ctx.strokeStyle = p.color;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(pt.x, pt.y, 11, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-        });
-      });
-
-      // Draw active sliding line & tilted pen graphic
-      if (gamePhase === 'SLIDING' && slideAnim) {
-        const p = players[currentPlayerIdx];
-        const curX = slideAnim.start.x + (slideAnim.end.x - slideAnim.start.x) * slideAnim.progress;
-        const curY = slideAnim.start.y + (slideAnim.end.y - slideAnim.start.y) * slideAnim.progress;
-
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = 2.8;
-        ctx.beginPath();
-        ctx.moveTo(slideAnim.start.x, slideAnim.start.y);
-        ctx.lineTo(curX, curY);
-        ctx.stroke();
-
-        drawPenGraphic(curX, curY, p.color);
-      } else if (gamePhase === 'AIM' && players[currentPlayerIdx]) {
-        const p = players[currentPlayerIdx];
-        const curPt = p.points[p.points.length - 1];
-        drawPenGraphic(curPt.x, curPt.y, p.color);
-      }
-    }
-
-    // Draws a sleek ballpoint pen resting on the active point
-    function drawPenGraphic(tipX, tipY, color) {
-      ctx.save();
-      ctx.translate(tipX, tipY);
-      ctx.rotate(0.45); // Angled like a hand holding a pen
-
-      // Pen Nib
-      ctx.fillStyle = '#94a3b8';
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(-4, -14);
-      ctx.lineTo(4, -14);
-      ctx.closePath();
-      ctx.fill();
-
-      // Pen Body
-      ctx.fillStyle = color;
-      ctx.fillRect(-4.5, -68, 9, 54);
-
-      // Top push cap (where index finger presses!)
-      ctx.fillStyle = '#0f172a';
-      ctx.beginPath();
-      ctx.arc(0, -70, 5, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.restore();
-    }
-
-    function drawAimGuide() {
-      if (gamePhase !== 'AIM' || !isAiming || !aimCurrent) return;
-      const p = players[currentPlayerIdx];
-      const origin = p.points[p.points.length - 1];
-
-      // Slingshot vector (pull back to launch forward)
-      const dx = origin.x - aimCurrent.x;
-      const dy = origin.y - aimCurrent.y;
-      const dist = Math.hypot(dx, dy);
-      if (dist < 8) return;
-
-      const power = Math.min(dist * 2.1, 240);
-      const angle = Math.atan2(dy, dx);
-      const predX = origin.x + Math.cos(angle) * power;
-      const predY = origin.y + Math.sin(angle) * power;
-
-      // Dashed aim preview line
-      ctx.save();
-      ctx.strokeStyle = p.color;
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 6]);
-      ctx.beginPath();
-      ctx.moveTo(origin.x, origin.y);
-      ctx.lineTo(predX, predY);
-      ctx.stroke();
-
-      // Pull-back tension line
-      ctx.strokeStyle = 'rgba(100, 116, 139, 0.5)';
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(origin.x, origin.y);
-      ctx.lineTo(aimCurrent.x, aimCurrent.y);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function drawCustomTrackPreview() {
-      if (gamePhase !== 'DRAW_TRACK' || customCenterPoints.length < 2) return;
-      ctx.save();
-      ctx.strokeStyle = 'rgba(37, 99, 235, 0.25)';
-      ctx.lineWidth = Math.min(W * 0.32, 124);
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.beginPath();
-      ctx.moveTo(customCenterPoints[0].x, customCenterPoints[0].y);
-      for (let i = 1; i < customCenterPoints.length; i++) {
-        ctx.lineTo(customCenterPoints[i].x, customCenterPoints[i].y);
-      }
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function drawScene() {
-      drawNotebookPaper();
-      if (gamePhase === 'DRAW_TRACK') {
-        drawCustomTrackPreview();
-      } else {
-        drawTrack();
-        drawPlayers();
-        drawAimGuide();
-      }
-    }
-
-    // Pointer / Touch Events
-    function getPos(e) {
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-      return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
-      };
-    }
-
-    canvas.addEventListener('pointerdown', (e) => {
-      const pos = getPos(e);
-      if (gamePhase === 'DRAW_TRACK') {
-        isDrawingTrack = true;
-        customCenterPoints = [pos];
-        drawScene();
-        return;
-      }
-
-      if (gamePhase === 'AIM') {
-        isAiming = true;
-        aimCurrent = pos;
-        drawScene();
-      }
-    });
-
-    canvas.addEventListener('pointermove', (e) => {
-      const pos = getPos(e);
-      if (gamePhase === 'DRAW_TRACK' && isDrawingTrack) {
-        customCenterPoints.push(pos);
-        drawScene();
-        return;
-      }
-
-      if (gamePhase === 'AIM' && isAiming) {
-        aimCurrent = pos;
-        drawScene();
-      }
-    });
-
-    canvas.addEventListener('pointerup', () => {
-      if (gamePhase === 'DRAW_TRACK') {
-        isDrawingTrack = false;
-        return;
-      }
-
-      if (gamePhase === 'AIM' && isAiming && aimCurrent) {
-        const p = players[currentPlayerIdx];
-        const origin = p.points[p.points.length - 1];
-        const dx = origin.x - aimCurrent.x;
-        const dy = origin.y - aimCurrent.y;
-        const dist = Math.hypot(dx, dy);
-
-        isAiming = false;
-        aimCurrent = null;
-
-        if (dist >= 10) {
-          const power = Math.min(dist * 2.1, 240);
-          const angle = Math.atan2(dy, dx);
-          executeFlick(Math.cos(angle) * power, Math.sin(angle) * power);
-        } else {
-          drawScene();
-        }
-      }
-    });
-
-    // Initial background render
-    resizeCanvas();
-    drawNotebookPaper();
-  </script>
-</body>
-</html>
+        a: { x: leftWall
